@@ -1,0 +1,26 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Data and models
+data/
+assets/
+*.pt
+*.pth
+*.bin
+*.zip
+*.tar
+*.gz
+*.csv
+*.json
+*.wav
+*.mp3
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
