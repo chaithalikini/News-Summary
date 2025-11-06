@@ -144,7 +144,15 @@ NewsAPI free plan limits may restrict the number of requests.
 Text-to-Speech is limited to Hindi language only.
 Only articles with textual content are considered.
 Maximum 20 articles can be analyzed at a time for performance reasons.
+
+**Deployment Links**
+-Hugging Face Spaces: https://huggingface.co/spaces/chaithali-kini/News-analyzer
+-GitHub Repository: https://github.com/chaithalikini/News-Summary
+
+**Bonus**
+- 💾 **Download Report:** Users can download the complete sentiment analysis report in JSON format for any company.
     
+
 
 
 
