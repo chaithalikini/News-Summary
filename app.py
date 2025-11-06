@@ -22,6 +22,13 @@ if company:
                 st.markdown(f"### 🧾 Structured Sentiment Report for {company.title()}")
                 st.code(json.dumps(data, indent=2, ensure_ascii=False), language="json")
 
+                st.download_button(
+                    label="💾 Download JSON Report",
+                    data=json.dumps(data, indent=2, ensure_ascii=False),
+                    file_name=f"{company.lower().replace(' ', '_')}_report.json",
+                    mime="application/json"
+                )
+
                 audio_file = data.get("Audio")
                 if audio_file and os.path.exists(audio_file):
                     st.markdown(f"### 🔊 Hindi Audio Summary for {company.title()}")
