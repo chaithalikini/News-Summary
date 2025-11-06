@@ -50,10 +50,12 @@ def _get_kw():
     return _kw_model
 
 # -----------------------
-# News fetching
+# News fetching (works for any company)
 # -----------------------
 def get_news(company: str, limit: int = 10) -> List[Dict]:
-    """Fetch top recent English news articles using NewsAPI and filter for relevance."""
+    """
+    Fetch top recent English news articles and return the top N most relevant for any company.
+    """
     try:
         from datetime import datetime, timedelta
 
@@ -61,13 +63,12 @@ def get_news(company: str, limit: int = 10) -> List[Dict]:
         if api_key == "YOUR_NEWS_API_KEY":
             raise ValueError("NEWS_API_KEY missing! Please set your NewsAPI key.")
 
-        # 30-day coverage for more articles
         to_date = datetime.now().strftime("%Y-%m-%d")
         from_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
 
         url = (
             f"https://newsapi.org/v2/everything?"
-            f"q={company}&language=en&sortBy=publishedAt&pageSize={limit*2}"
+            f"q={company}&language=en&sortBy=publishedAt&pageSize={limit*3}"
             f"&from={from_date}&to={to_date}&apiKey={api_key}"
         )
 
@@ -79,16 +80,11 @@ def get_news(company: str, limit: int = 10) -> List[Dict]:
         data = response.json()
         articles = data.get("articles", [])
 
-        # Filter relevant articles
-        filtered_articles = filter_relevant_articles(company, articles)
-
-        # Fallback: include unfiltered if less than limit
-        if len(filtered_articles) < limit:
-            remaining = [a for a in articles if a not in filtered_articles]
-            filtered_articles.extend(remaining[:limit - len(filtered_articles)])
+        # Rank articles by relevance
+        ranked_articles = rank_articles_by_relevance(company, articles)
 
         news = []
-        for art in filtered_articles[:limit]:
+        for art in ranked_articles[:limit]:
             title = art.get("title") or "No Title"
             desc = art.get("description") or art.get("content") or ""
             desc = re.sub(r"http\S+", "", desc)
@@ -103,6 +99,7 @@ def get_news(company: str, limit: int = 10) -> List[Dict]:
                 "Sentiment": analyze_sentiment(desc),
                 "Topics": extract_topics(desc, company)
             })
+
         return news
 
     except Exception as e:
@@ -110,31 +107,26 @@ def get_news(company: str, limit: int = 10) -> List[Dict]:
         return []
 
 # -----------------------
-# Relevance Filtering
+# Rank articles by semantic relevance
 # -----------------------
-def filter_relevant_articles(company: str, articles: List[Dict], threshold: float = 0.35) -> List[Dict]:
-    """Filter articles by keyword and semantic similarity."""
+def rank_articles_by_relevance(company: str, articles: List[Dict]) -> List[Dict]:
+    """
+    Rank articles based on semantic similarity to company name.
+    """
     sem_model = _get_semantic_model()
     company_embed = sem_model.encode(company, convert_to_tensor=True)
 
-    filtered = []
+    scored = []
     for art in articles:
         title = art.get("title", "")
         desc = art.get("description", "")
         content = f"{title}. {desc}".strip()
-
-        # Keyword filter
-        if company.lower() in content.lower():
-            filtered.append(art)
-            continue
-
-        # Semantic filter
         art_embed = sem_model.encode(content, convert_to_tensor=True)
         score = util.cos_sim(company_embed, art_embed).item()
-        if score >= threshold:
-            filtered.append(art)
+        scored.append((score, art))
 
-    return filtered
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return [art for _, art in scored]
 
 # -----------------------
 # Summarization
