@@ -7,30 +7,33 @@ from utils import (
 app = FastAPI(title="News Summarizer API")
 
 @app.get("/analyze")
-def analyze_news(company: str = Query(..., min_length=1), limit: int = Query(10, ge=1)):
+def analyze_news(company: str = Query(..., min_length=1), limit: int = Query(10, ge=1, le=20)):
     try:
-        # Step 1: Fetch news
+        company = company.strip()
+        if not company:
+            raise HTTPException(status_code=400, detail="Company name cannot be empty.")
+
+        # Fetches the news
         news = get_news(company, limit)
         if not news:
-            raise HTTPException(status_code=404, detail="No articles found.")
+            raise HTTPException(status_code=404, detail=f"No articles found for '{company}'.")
 
-        # Step 2: Summarize + analyze each article
+        # Summarizes and analyze
         for a in news:
             text = a["Summary"]
             a["Summary"] = summarize_text(text, a["Title"])
             a["Sentiment"] = analyze_sentiment(a["Summary"])
             a["Topics"] = extract_topics(a["Summary"], company)
 
-        # Step 3: Comparative + final analysis
+        # Final analysis
         comparative = comparative_analysis(news, company)
         final_sent = comparative["Final Sentiment Analysis"]
         hindi_summary = comparative["Hindi Summary"]
 
-        # Step 4: Generate Hindi TTS
+        # Generates Hindi TTS
         filename = f"{company.lower().replace(' ', '_')}_report.mp3"
         audio_path = text_to_speech_hindi(hindi_summary, filename)
 
-        # Step 5: Build clean response
         report = {
             "Company": company.title(),
             "Articles": news,
