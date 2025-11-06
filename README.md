@@ -48,11 +48,15 @@ streamlit run app.py
 6. Open the browser and enter the company name to get the sentiment report and Hindi audio summary.
 
 ## API Documentation
+
 Endpoint: /analyze
+
 Method: GET
+
 Parameters:
 a. company (str, required): Name of the company to fetch news for.
 b. limit (int, optional): Number of news articles to analyze (default=10, max=20).
+
 **Usage Example (Browser / Postman):** 
 GET http://localhost:8000/analyze?company=Tesla&limit=10
 
@@ -153,6 +157,7 @@ Maximum 20 articles can be analyzed at a time for performance reasons.
 ## Bonus
 - 💾 **Download Report:** Users can download the complete sentiment analysis report in JSON format for any company.
     
+
 
 
 
