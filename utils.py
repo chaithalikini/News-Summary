@@ -5,26 +5,20 @@ import requests
 from collections import Counter
 from sentence_transformers import SentenceTransformer, util
 
-# -----------------------
 # Global caches
-# -----------------------
 _summarizer = None
 _sentiment = None
 _kw_model = None
 _sem_model = None
 
-# -----------------------
 # Semantic model loader
-# -----------------------
 def _get_semantic_model():
     global _sem_model
     if _sem_model is None:
         _sem_model = SentenceTransformer('all-MiniLM-L6-v2')
     return _sem_model
 
-# -----------------------
 # Helper functions
-# -----------------------
 def _get_summarizer():
     global _summarizer
     if _summarizer is None:
@@ -49,9 +43,7 @@ def _get_kw():
         _kw_model = KeyBERT()
     return _kw_model
 
-# -----------------------
-# News fetching (works for any company)
-# -----------------------
+# News fetching 
 def get_news(company: str, limit: int = 10) -> List[Dict]:
     """
     Fetch top recent English news articles and return the top N most relevant for any company.
@@ -106,9 +98,7 @@ def get_news(company: str, limit: int = 10) -> List[Dict]:
         print("get_news error:", e)
         return []
 
-# -----------------------
 # Rank articles by semantic relevance
-# -----------------------
 def rank_articles_by_relevance(company: str, articles: List[Dict]) -> List[Dict]:
     """
     Rank articles based on semantic similarity to company name.
@@ -128,9 +118,7 @@ def rank_articles_by_relevance(company: str, articles: List[Dict]) -> List[Dict]
     scored.sort(reverse=True, key=lambda x: x[0])
     return [art for _, art in scored]
 
-# -----------------------
 # Summarization
-# -----------------------
 def summarize_text(text: str, title: str = "", max_length=100, min_length=40) -> str:
     if not text:
         return ""
@@ -148,9 +136,7 @@ def summarize_text(text: str, title: str = "", max_length=100, min_length=40) ->
     except Exception:
         return text[:150] + "..."
 
-# -----------------------
 # Sentiment Analysis
-# -----------------------
 def analyze_sentiment(text: str) -> str:
     if not text:
         return "Neutral"
@@ -163,9 +149,7 @@ def analyze_sentiment(text: str) -> str:
     except Exception:
         return "Neutral"
 
-# -----------------------
-# Topic Extraction (Company-focused)
-# -----------------------
+# Topic Extraction
 def extract_topics(text: str, company: str = "", top_n=3) -> List[str]:
     if not text:
         return []
@@ -207,9 +191,8 @@ def extract_topics(text: str, company: str = "", top_n=3) -> List[str]:
         tokens = re.findall(r"[A-Za-z]{3,}", text)
         return [t.title() for t in tokens[:top_n]]
 
-# -----------------------
+
 # Comparative Analysis
-# -----------------------
 def comparative_analysis(articles: List[Dict], company: str = "") -> Dict:
     sentiment_dist = {"Positive": 0, "Negative": 0, "Neutral": 0}
     for a in articles:
@@ -290,9 +273,7 @@ def comparative_analysis(articles: List[Dict], company: str = "") -> Dict:
         "Hindi Summary": final_hi
     }
 
-# -----------------------
 # Text-to-Speech (Hindi)
-# -----------------------
 def text_to_speech_hindi(text: str, filename: str = "report.mp3") -> str:
     try:
         from gtts import gTTS
@@ -304,3 +285,4 @@ def text_to_speech_hindi(text: str, filename: str = "report.mp3") -> str:
     except Exception as e:
         print("TTS error:", e)
         return ""
+
