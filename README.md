@@ -128,12 +128,14 @@ Enter Company Nmae : Tesla
 ```
 ## Models & Libraries
 
-**Task**	                **Model / Library**
-Summarization	         t5-base via HuggingFace Transformers
-Sentiment Analysis	   cardiffnlp/twitter-roberta-base-sentiment
-Topic Extraction	     KeyBERT
-Semantic Ranking	     all-MiniLM-L6-v2 via SentenceTransformers
-Hindi Text-to-Speech	 gTTS
+| Task                 | Model / Library                                   |
+|----------------------|--------------------------------------------------|
+| Summarization         | t5-base via HuggingFace Transformers           |
+| Sentiment Analysis    | cardiffnlp/twitter-roberta-base-sentiment      |
+| Topic Extraction      | KeyBERT                                        |
+| Semantic Ranking      | all-MiniLM-L6-v2 via SentenceTransformers      |
+| Hindi Text-to-Speech  | gTTS                                           |
+
 
 
 **Assumptions & Limitations**
@@ -143,6 +145,7 @@ Text-to-Speech is limited to Hindi language only.
 Only articles with textual content are considered.
 Maximum 20 articles can be analyzed at a time for performance reasons.
     
+
 
 
 
