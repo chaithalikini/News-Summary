@@ -57,9 +57,7 @@ GET http://localhost:8000/analyze?company=Tesla&limit=10
 **Input:**
 Enter Company Nmae : Tesla
 
-### **2️⃣ Sample Output (JSON)**
-
-Instead of pasting raw JSON, use a **JSON code block**:
+### **Sample Output:**
 
 ```markdown
 ### **Sample Output**
@@ -141,5 +139,6 @@ Text-to-Speech is limited to Hindi language only.
 Only articles with textual content are considered.
 Maximum 20 articles can be analyzed at a time for performance reasons.
     
+
 
 
