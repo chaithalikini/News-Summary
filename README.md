@@ -11,7 +11,8 @@ This web-based application extracts key information from multiple news articles 
 - 🔊 Generates a Hindi TTS audio summarizing the report.
 - 🌐 Web-based interface via Streamlit with API-driven architecture
 
-**File Structure**
+### **File Structure**
+```text
 news-analyse/
 │
 ├── app.py                  # Streamlit frontend
@@ -21,7 +22,6 @@ news-analyse/
 ├── outputs/                # Generated audio files
 │   └── audio/
 └── README.md
-
 ---
 
 ## Installation & Setup
@@ -57,7 +57,13 @@ GET http://localhost:8000/analyze?company=Tesla&limit=10
 **Input:**
 Enter Company Nmae : Tesla
 
-**Sample Output:**
+### **2️⃣ Sample Output (JSON)**
+
+Instead of pasting raw JSON, use a **JSON code block**:
+
+```markdown
+### **Sample Output**
+```json
 {
   "Company": "Tesla",
   "Articles": [
@@ -135,4 +141,5 @@ Text-to-Speech is limited to Hindi language only.
 Only articles with textual content are considered.
 Maximum 20 articles can be analyzed at a time for performance reasons.
     
+
 
