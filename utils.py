@@ -5,89 +5,26 @@ import requests
 from collections import Counter
 from sentence_transformers import SentenceTransformer, util
 
+# -----------------------
 # Global caches
+# -----------------------
 _summarizer = None
 _sentiment = None
 _kw_model = None
 _sem_model = None
 
+# -----------------------
 # Semantic model loader
+# -----------------------
 def _get_semantic_model():
     global _sem_model
     if _sem_model is None:
         _sem_model = SentenceTransformer('all-MiniLM-L6-v2')
     return _sem_model
 
-# News fetching
-def get_news(company: str, limit: int = 10) -> List[Dict]:
-    """Fetch top recent English news articles using NewsAPI"""
-    try:
-        from datetime import datetime, timedelta
-        api_key = os.getenv("NEWS_API_KEY") or "YOUR_NEWS_API_KEY"
-        if api_key == "YOUR_NEWS_API_KEY":
-            raise ValueError("NEWS_API_KEY missing! Please set your NewsAPI key.")
-        to_date = datetime.now().strftime("%Y-%m-%d")
-        from_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-        fetch_limit = max(20, limit * 2)
-        url = (
-            f"https://newsapi.org/v2/everything?"
-            f"q={company}&language=en&sortBy=publishedAt&pageSize={fetch_limit}"
-            f"&from={from_date}&to={to_date}&apiKey={api_key}"
-        )
-        response = requests.get(url, timeout=10)
-        if response.status_code != 200:
-            print("NewsAPI error:", response.text)
-            return []
-        data = response.json()
-        articles = data.get("articles", [])
-        filtered_articles = filter_relevant_articles(company, articles, threshold=0.30)
-        selected_articles = filtered_articles[:limit]
-        news = []
-        for art in selected_articles:
-            title = art.get("title") or "No Title"
-            desc = art.get("description") or art.get("content") or ""
-            desc = re.sub(r"http\S+", "", desc)
-            desc = re.sub(r"[^A-Za-z0-9\s.,'\-]", " ", desc)
-            desc = re.sub(r"\s+", " ", desc).strip()
-            if not desc:
-                desc = f"{title}. More details to follow."
-            news.append({
-                "Title": title.strip(),
-                "Summary": desc.strip(),
-                "Sentiment": analyze_sentiment(desc),
-                "Topics": extract_topics(desc)
-            })
-        return news
-    except Exception as e:
-        print("get_news error:", e)
-        return []
-
-# Relevance Filtering
-def filter_relevant_articles(company: str, articles: List[Dict], threshold: float = 0.35) -> List[Dict]:
-    """Filter articles by keyword and semantic similarity."""
-    sem_model = _get_semantic_model()
-    company_embed = sem_model.encode(company, convert_to_tensor=True)
-
-    filtered = []
-    for art in articles:
-        title = art.get("title", "")
-        desc = art.get("description", "")
-        content = f"{title}. {desc}".strip()
-
-        # Keyword filter
-        if company.lower() in content.lower():
-            filtered.append(art)
-            continue
-
-        # Semantic filter
-        art_embed = sem_model.encode(content, convert_to_tensor=True)
-        score = util.cos_sim(company_embed, art_embed).item()
-        if score >= threshold:
-            filtered.append(art)
-
-    return filtered
-
-# Helper Functions
+# -----------------------
+# Helper functions
+# -----------------------
 def _get_summarizer():
     global _summarizer
     if _summarizer is None:
@@ -112,7 +49,96 @@ def _get_kw():
         _kw_model = KeyBERT()
     return _kw_model
 
+# -----------------------
+# News fetching
+# -----------------------
+def get_news(company: str, limit: int = 10) -> List[Dict]:
+    """Fetch top recent English news articles using NewsAPI and filter for relevance."""
+    try:
+        from datetime import datetime, timedelta
+
+        api_key = os.getenv("NEWS_API_KEY") or "YOUR_NEWS_API_KEY"
+        if api_key == "YOUR_NEWS_API_KEY":
+            raise ValueError("NEWS_API_KEY missing! Please set your NewsAPI key.")
+
+        # 30-day coverage for more articles
+        to_date = datetime.now().strftime("%Y-%m-%d")
+        from_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
+        url = (
+            f"https://newsapi.org/v2/everything?"
+            f"q={company}&language=en&sortBy=publishedAt&pageSize={limit*2}"
+            f"&from={from_date}&to={to_date}&apiKey={api_key}"
+        )
+
+        response = requests.get(url, timeout=10)
+        if response.status_code != 200:
+            print("NewsAPI error:", response.text)
+            return []
+
+        data = response.json()
+        articles = data.get("articles", [])
+
+        # Filter relevant articles
+        filtered_articles = filter_relevant_articles(company, articles)
+
+        # Fallback: include unfiltered if less than limit
+        if len(filtered_articles) < limit:
+            remaining = [a for a in articles if a not in filtered_articles]
+            filtered_articles.extend(remaining[:limit - len(filtered_articles)])
+
+        news = []
+        for art in filtered_articles[:limit]:
+            title = art.get("title") or "No Title"
+            desc = art.get("description") or art.get("content") or ""
+            desc = re.sub(r"http\S+", "", desc)
+            desc = re.sub(r"[^A-Za-z0-9\s.,'\-]", " ", desc)
+            desc = re.sub(r"\s+", " ", desc).strip()
+            if not desc:
+                desc = f"{title}. More details to follow."
+
+            news.append({
+                "Title": title.strip(),
+                "Summary": desc.strip(),
+                "Sentiment": analyze_sentiment(desc),
+                "Topics": extract_topics(desc, company)
+            })
+        return news
+
+    except Exception as e:
+        print("get_news error:", e)
+        return []
+
+# -----------------------
+# Relevance Filtering
+# -----------------------
+def filter_relevant_articles(company: str, articles: List[Dict], threshold: float = 0.35) -> List[Dict]:
+    """Filter articles by keyword and semantic similarity."""
+    sem_model = _get_semantic_model()
+    company_embed = sem_model.encode(company, convert_to_tensor=True)
+
+    filtered = []
+    for art in articles:
+        title = art.get("title", "")
+        desc = art.get("description", "")
+        content = f"{title}. {desc}".strip()
+
+        # Keyword filter
+        if company.lower() in content.lower():
+            filtered.append(art)
+            continue
+
+        # Semantic filter
+        art_embed = sem_model.encode(content, convert_to_tensor=True)
+        score = util.cos_sim(company_embed, art_embed).item()
+        if score >= threshold:
+            filtered.append(art)
+
+    return filtered
+
+# -----------------------
 # Summarization
+# -----------------------
 def summarize_text(text: str, title: str = "", max_length=100, min_length=40) -> str:
     if not text:
         return ""
@@ -130,7 +156,9 @@ def summarize_text(text: str, title: str = "", max_length=100, min_length=40) ->
     except Exception:
         return text[:150] + "..."
 
+# -----------------------
 # Sentiment Analysis
+# -----------------------
 def analyze_sentiment(text: str) -> str:
     if not text:
         return "Neutral"
@@ -143,10 +171,13 @@ def analyze_sentiment(text: str) -> str:
     except Exception:
         return "Neutral"
 
-# Topic Extraction
-def extract_topics(text: str, top_n=3) -> List[str]:
+# -----------------------
+# Topic Extraction (Company-focused)
+# -----------------------
+def extract_topics(text: str, company: str = "", top_n=3) -> List[str]:
     if not text:
         return []
+
     try:
         kw = _get_kw().extract_keywords(
             text,
@@ -155,16 +186,38 @@ def extract_topics(text: str, top_n=3) -> List[str]:
             top_n=top_n,
             use_maxsum=True
         )
-        clean = [k.title() for k, _ in kw if not re.match(r'^(href|rss|http|amp|www|cbm|ol)$', k.lower())]
-        if not clean:
-            tokens = re.findall(r"[A-Za-z]{3,}", text)[:top_n]
-            clean = [t.title() for t in tokens]
-        return clean
-    except Exception:
-        tokens = re.findall(r"[A-Za-z]{3,}", text)[:top_n]
-        return [t.title() for t in tokens]
 
+        clean = []
+        for k, _ in kw:
+            k_clean = k.title()
+            if not re.match(r'^(href|rss|http|amp|www|cbm|ol|read|click|article)$', k.lower()):
+                clean.append(k_clean)
+
+        # Ensure company name appears in topics
+        if company:
+            for t in company.split():
+                if t.lower() in text.lower() and t.title() not in clean:
+                    clean.insert(0, t.title())
+
+        # Fill if less than top_n
+        if len(clean) < top_n:
+            tokens = re.findall(r"[A-Za-z]{3,}", text)
+            for t in tokens:
+                t_title = t.title()
+                if t_title not in clean:
+                    clean.append(t_title)
+                if len(clean) >= top_n:
+                    break
+
+        return clean[:top_n]
+
+    except Exception:
+        tokens = re.findall(r"[A-Za-z]{3,}", text)
+        return [t.title() for t in tokens[:top_n]]
+
+# -----------------------
 # Comparative Analysis
+# -----------------------
 def comparative_analysis(articles: List[Dict], company: str = "") -> Dict:
     sentiment_dist = {"Positive": 0, "Negative": 0, "Neutral": 0}
     for a in articles:
@@ -245,13 +298,15 @@ def comparative_analysis(articles: List[Dict], company: str = "") -> Dict:
         "Hindi Summary": final_hi
     }
 
+# -----------------------
 # Text-to-Speech (Hindi)
+# -----------------------
 def text_to_speech_hindi(text: str, filename: str = "report.mp3") -> str:
     try:
         from gtts import gTTS
         os.makedirs("outputs/audio", exist_ok=True)
         path = os.path.join("outputs/audio", filename)
-        path = path.replace("\\", "/")  
+        path = path.replace("\\", "/")  # Streamlit compatible
         gTTS(text, lang="hi").save(path)
         return path
     except Exception as e:
