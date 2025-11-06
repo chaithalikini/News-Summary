@@ -1,46 +1,27 @@
-from fastapi import FastAPI, Query, HTTPException
-from utils import (
-    get_news, summarize_text, analyze_sentiment,
-    extract_topics, comparative_analysis, text_to_speech_hindi
-)
+import streamlit as st
+import requests
+import json
+import os
 
-app = FastAPI(title="News Summarizer API")
+st.set_page_config(page_title="News Summarizer", layout="wide")
+st.title("📰 News Summarization and Text-to-Speech Application")
+st.write("Performs sentiment analysis, conducts a comparative analysis, and generates a text-to-speech (TTS) output in Hindi.")
 
-@app.get("/analyze")
-def analyze_news(company: str = Query(..., min_length=1), limit: int = Query(10, ge=1)):
-    try:
-        #Fetchs news
-        news = get_news(company, limit)
-        if not news:
-            raise HTTPException(status_code=404, detail="No articles found.")
-        if len(news) < limit:
-            note = f"Only {len(news)} relevant articles found for '{company}'."
+API_URL = os.environ.get("API_URL") or "http://localhost:8000/analyze"
+
+company = st.text_input("Enter Company Name:")
+
+if company:
+    with st.spinner("Fetching and analyzing news..."):
+        response = requests.get(API_URL, params={"company": company, "limit": 10})
+        if response.status_code == 200:
+            data = response.json()
+
+            st.markdown(f"### 🧾 Structured Sentiment Report for {company.title()}")
+            st.code(json.dumps(data, indent=2, ensure_ascii=False), language="json")
+
+            if data.get("Audio"):
+                st.markdown(f"### 🔊 Hindi Audio Summary for {company.title()}")
+                st.audio(data["Audio"])
         else:
-            note = f"{len(news)} articles fetched for '{company}'."
-        for a in news:
-            text = a["Summary"]
-            a["Summary"] = summarize_text(text, a["Title"])
-            a["Sentiment"] = analyze_sentiment(a["Summary"])
-            a["Topics"] = extract_topics(a["Summary"], top_n=3)
-        comparative = comparative_analysis(news, company)
-        final_sent = comparative["Final Sentiment Analysis"]
-        hindi_summary = comparative["Hindi Summary"]
-
-        # Generates Hindi TTS
-        filename = f"{company.lower().replace(' ', '_')}_report.mp3"
-        audio_path = text_to_speech_hindi(hindi_summary, filename)
-
-        # Builds response
-        report = {
-            "Company": company.title(),
-            "Articles": news,
-            "Comparative Sentiment Score": comparative["Comparative Sentiment Score"],
-            "Final Sentiment Analysis": final_sent,
-            "Audio": audio_path,
-            "Note": note
-        }
-
-        return report
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            st.error(f"Error: {response.text}")
