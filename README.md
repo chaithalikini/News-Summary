@@ -2,16 +2,20 @@
 Project Overview
 This web-based application extracts key information from multiple news articles related to a given company, performs sentiment analysis, conducts comparative analysis, and generates a Hindi text-to-speech (TTS) audio summary. Users can input a company name and receive a structured sentiment report along with an audio output.
 
-**Features**
-- 📰 Fetches latest news articles for any company using NewsAPI.
-- ✍️ Summarizes articles using a transformer-based summarizer.
-- 🙂 Performs sentiment analysis (Positive, Negative, Neutral) per article.
-- 🔑 Extracts key topics from each article.
-- 📊 Conducts comparative sentiment analysis across multiple articles.
-- 🔊 Generates a Hindi TTS audio summarizing the report.
-- 🌐 Web-based interface via Streamlit with API-driven architecture
+---
 
-### **File Structure**
+## **Features**
+- 📰 **Fetches latest news articles** for any company using NewsAPI.  
+- ✍️ **Summarizes articles** using a transformer-based summarizer.  
+- 🙂 **Performs sentiment analysis** (Positive, Negative, Neutral) per article.  
+- 🔑 **Extracts key topics** from each article.  
+- 📊 **Conducts comparative sentiment analysis** across multiple articles.  
+- 🔊 **Generates a Hindi TTS audio** summarizing the report.  
+- 🌐 **Web-based interface** via Streamlit with API-driven architecture.
+
+---
+
+## **File Structure**
 ```text
 news-analyse/
 │
@@ -22,7 +26,6 @@ news-analyse/
 ├── outputs/                # Generated audio files
 │   └── audio/
 └── README.md
----
 
 ## Installation & Setup
 
@@ -139,6 +142,7 @@ Text-to-Speech is limited to Hindi language only.
 Only articles with textual content are considered.
 Maximum 20 articles can be analyzed at a time for performance reasons.
     
+
 
 
 
