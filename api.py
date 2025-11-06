@@ -19,7 +19,7 @@ def analyze_news(company: str = Query(..., min_length=1), limit: int = Query(10,
             text = a["Summary"]
             a["Summary"] = summarize_text(text, a["Title"])
             a["Sentiment"] = analyze_sentiment(a["Summary"])
-            a["Topics"] = extract_topics(a["Summary"], top_n=3)
+            a["Topics"] = extract_topics(a["Summary"], company)
 
         # Step 3: Comparative + final analysis
         comparative = comparative_analysis(news, company)
